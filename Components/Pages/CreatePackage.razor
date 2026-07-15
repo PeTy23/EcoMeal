@@ -1,0 +1,201 @@
+﻿@page "/package/create"
+@page "/package/edit/{Id:guid}"
+@using EcoMeal.Database.Entities
+@using EcoMeal.Database.Entities.Enums
+@using EcoMeal.Services.interfaces
+@using System.ComponentModel.DataAnnotations
+@rendermode InteractiveServer
+@inject IPackageService PackageService
+@inject IBusinessService BusinessService
+@inject NavigationManager NavigationManager
+
+<h3>@(IsEditMode ? "Edit Package" : "Create Package")</h3>
+
+@if (loading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="@model" OnValidSubmit="Submit" FormName="packageForm">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+
+        <div class="mb-3">
+            <label for="businessId" class="form-label">Business</label>
+            <InputSelect id="businessId" class="form-select" @bind-Value="model.BusinessId">
+                <option value="">-- Select a Business --</option>
+                @foreach (var business in businesses)
+                {
+                    <option value="@business.Id">@business.Name</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label for="packageType" class="form-label">Package Type</label>
+            <InputSelect id="packageType" class="form-select" @bind-Value="model.PackageTypeId">
+                @foreach (var type in Enum.GetValues<PackageTypeEnum>())
+                {
+                    <option value="@type">@type</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <InputText id="name" class="form-control" @bind-Value="model.Name" />
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <InputText id="description" class="form-control" @bind-Value="model.Description" />
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="price" class="form-label">Price</label>
+                <InputNumber id="price" class="form-control" @bind-Value="model.Price" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="quantity" class="form-label">Quantity</label>
+                <InputNumber id="quantity" class="form-control" @bind-Value="model.Quantity" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="pickupStart" class="form-label">Pickup Start</label>
+                <InputDate id="pickupStart" Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="model.PickupStart" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="pickupEnd" class="form-label">Pickup End</label>
+                <InputDate id="pickupEnd" Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="model.PickupEnd" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="imageUrl" class="form-label">Image URL</label>
+            <InputText id="imageUrl" class="form-control" @bind-Value="model.ImageUrl" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">@(IsEditMode ? "Save" : "Create")</button>
+
+        @if (IsEditMode)
+        {
+            <button type="button" class="btn btn-danger ms-2" @onclick="DeletePackage">Delete</button>
+        }
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsEditMode => Id.HasValue;
+    private bool loading = true;
+
+    private PackageFormModel model = new();
+    private List<Business> businesses = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Încărcăm lista de business-uri pentru dropdown
+        businesses = await BusinessService.GetAll();
+
+        if (IsEditMode)
+        {
+            var package = await PackageService.GetByIdAsync(Id!.Value);
+
+            if (package is not null)
+            {
+                model = new PackageFormModel
+                {
+                    BusinessId = package.BusinessId,
+                    PackageTypeId = package.PackageTypeId,
+                    Name = package.Name,
+                    Description = package.Description,
+                    Price = package.Price,
+                    Quantity = package.Quantity,
+                    PickupStart = package.PickupStart,
+                    PickupEnd = package.PickupEnd,
+                    ImageUrl = package.ImageUrl
+                };
+            }
+        }
+
+        loading = false;
+    }
+
+    private async Task Submit()
+    {
+        var package = new Package
+        {
+            Id = Id ?? Guid.NewGuid(),
+            BusinessId = model.BusinessId!.Value, // Este sigur .Value pentru că avem validare [Required]
+            PackageTypeId = model.PackageTypeId,
+            Name = model.Name!,
+            Description = model.Description!,
+            Price = model.Price,
+            Quantity = model.Quantity,
+            PickupStart = model.PickupStart,
+            PickupEnd = model.PickupEnd,
+            ImageUrl = model.ImageUrl ?? string.Empty,
+
+            // Setăm proprietățile de navigare pe null! pentru a mulțumi compilatorul (din cauza cuvântului "required" din entitate)
+            Business = null!,
+            PackageType = null!
+        };
+
+        if (IsEditMode)
+        {
+            await PackageService.UpdateAsync(package);
+        }
+        else
+        {
+            await PackageService.AddAsync(package);
+        }
+
+        NavigationManager.NavigateTo("/counter"); // Schimbă cu pagina unde vrei să îl redirecționezi
+    }
+
+    private async Task DeletePackage()
+    {
+        if (Id.HasValue)
+        {
+            await PackageService.DeleteAsync(Id.Value);
+            NavigationManager.NavigateTo("/counter");
+        }
+    }
+
+    private class PackageFormModel
+    {
+        [Required(ErrorMessage = "Please select a business.")]
+        public Guid? BusinessId { get; set; }
+
+        [Required(ErrorMessage = "Please select a package type.")]
+        public PackageTypeEnum PackageTypeId { get; set; }
+
+        [Required(ErrorMessage = "Name is required.")]
+        public string? Name { get; set; }
+
+        [Required(ErrorMessage = "Description is required.")]
+        public string? Description { get; set; }
+
+        [Required]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0.")]
+        public float Price { get; set; }
+
+        [Required]
+        [Range(1, int.MaxValue, ErrorMessage = "Quantity must be at least 1.")]
+        public int Quantity { get; set; }
+
+        [Required]
+        public DateTime PickupStart { get; set; } = DateTime.Today.AddHours(12);
+
+        [Required]
+        public DateTime PickupEnd { get; set; } = DateTime.Today.AddHours(18);
+
+        public string? ImageUrl { get; set; }
+    }
+}

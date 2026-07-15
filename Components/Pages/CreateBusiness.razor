@@ -1,0 +1,145 @@
+﻿@page "/business/create"
+@page "/business/edit/{Id:guid}"
+@using EcoMeal.Database.Entities
+@using EcoMeal.Database.Entities.Enums
+@using EcoMeal.Services.interfaces
+@using System.ComponentModel.DataAnnotations
+@rendermode InteractiveServer
+@inject IBusinessService BusinessService
+@inject NavigationManager NavigationManager
+
+<h3>@(IsEditMode ? "Edit Business" : "Create Business")</h3>
+
+@if (loading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="@model" OnValidSubmit="Submit" FormName="businessForm">
+        <!-- Aceste două linii activează validările roșii pe ecran -->
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <InputText id="name" class="form-control" @bind-Value="model.Name" />
+        </div>
+        <div class="mb-3">
+            <label for="Description" class="form-label">Description</label>
+            <InputText id="Description" class="form-control" @bind-Value="model.Description" />
+        </div>
+        <div class="mb-3">
+            <label for="Address" class="form-label">Address</label>
+            <InputText id="Address" class="form-control" @bind-Value="model.Address" />
+        </div>
+        <div class="mb-3">
+            <label for="ImageUrl" class="form-label">ImageUrl</label>
+            <InputText id="ImageUrl" class="form-control" @bind-Value="model.ImageUrl" />
+        </div>
+        <div class="mb-3">
+            <label for="BusinessType" class="form-label">BusinessType</label>
+            <!-- Am modificat în BusinessTypeEnum -->
+            <InputSelect id="businessType" class="form-select" @bind-Value="model.BusinessType">
+                @foreach (var type in Enum.GetValues<BusinessTypeEnum>())
+                {
+                    <option value="@type">@type</option>
+                }
+            </InputSelect>
+        </div>
+
+        <button type="submit" class="btn btn-primary">@(IsEditMode ? "Save" : "Create")</button>
+
+        @if (IsEditMode)
+        {
+            <button type="button" class="btn btn-danger" @onclick="DeleteBusiness">Delete</button>
+        }
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private bool IsEditMode => Id.HasValue;
+    private bool loading = true;
+    private BusinessFormModel model = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsEditMode)
+        {
+            // Apelăm direct serviciul, care ne dă obiectul curat, fără coduri HTTP
+            var business = await BusinessService.GetByIdAsync(Id!.Value);
+
+            if (business is not null)
+            {
+                model = new BusinessFormModel
+                {
+                    Name = business.Name,
+                    Description = business.Description,
+                    Address = business.Address,
+                    ImageUrl = business.ImageUrl,
+                    // Dacă clasa Business are BusinessTypeEnum, facem cast sau atribuire directă
+                    BusinessType = (BusinessTypeEnum)business.BusinessTypeId,
+                };
+            }
+        }
+
+        loading = false;
+    }
+
+    private async Task Submit()
+    {
+        var business = new Business
+        {
+            Id = Id ?? Guid.NewGuid(),
+            Name = model.Name,
+            Description = model.Description,
+            Address = model.Address,
+            ImageUrl = model.ImageUrl,
+            // Aici mapați valoarea înapoi către proprietatea din clasa voastră
+            BusinessTypeId = model.BusinessType,
+            type = null!
+        };
+
+        if (IsEditMode)
+        {
+            await BusinessService.UpdateAsync(business);
+        }
+        else
+        {
+            await BusinessService.AddAsync(business);
+        }
+
+        // Probabil vei dori să schimbi asta din /counter într-o pagină care listează business-urile
+        NavigationManager.NavigateTo("/counter");
+    }
+
+    private async Task DeleteBusiness()
+    {
+        if (Id.HasValue)
+        {
+            await BusinessService.DeleteAsync(Id.Value);
+            NavigationManager.NavigateTo("/counter");
+        }
+    }
+
+    // Am adăugat atributele [Required] pentru a face formularul sigur
+    private class BusinessFormModel
+    {
+        [Required(ErrorMessage = "Name is required.")]
+        public string? Name { get; set; }
+
+        [Required(ErrorMessage = "Description is required.")]
+        public string? Description { get; set; }
+
+        [Required(ErrorMessage = "Address is required.")]
+        public string? Address { get; set; }
+
+        public string? ImageUrl { get; set; } // Opțional, dacă permiteți business-uri fără poză
+
+        [Required]
+        public BusinessTypeEnum BusinessType { get; set; } // Tipul trebuie să fie Enum-ul
+    }
+}

@@ -1,16 +1,49 @@
 ﻿@page "/counter"
+@using EcoMeal.Controllers
+@using EcoMeal.Database.Entities
 @rendermode InteractiveServer
+@inject BusinessController BusinessController
 
-<PageTitle>Counter</PageTitle>
 
-<h1>Counter</h1>
+@if (businesses is null || businesses.Count == 0)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table"">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Description</th>
+                <th>Type</th>
+            </tr>
+        </thead>
 
-<p role="status">Current count: @currentCount</p>
+        <tbody>
+            @foreach (var business in businesses)
+            {
+                <tr>
+                    <td>@business.Name</td>
+                    <td>@business.Address</td>
+                    <td>@business.Description</td>
+                    <td>@business.type.Name</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
 
 @code {
     private int currentCount = 0;
+    private List<Business> businesses = new List<Business>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        businesses = (await BusinessController.GetAll()).Value;
+    }
 
     private void IncrementCount()
     {
