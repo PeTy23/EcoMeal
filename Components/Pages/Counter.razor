@@ -1,9 +1,11 @@
 ﻿@page "/counter"
 @using EcoMeal.Controllers
 @using EcoMeal.Database.Entities
+@using EcoMeal.Constants
+@using Microsoft.AspNetCore.Authorization
 @rendermode InteractiveServer
 @inject BusinessController BusinessController
-
+@attribute [Authorize(Roles = AppRoles.Admin)]
 
 @if (businesses is null || businesses.Count == 0)
 {

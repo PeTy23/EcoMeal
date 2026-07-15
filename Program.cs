@@ -18,6 +18,7 @@ builder.Services.AddRazorComponents()
 var connectionString = builder.Configuration.GetConnectionString("EcoMealContext");
 builder.Services.AddDbContext<EcoMealDbContext>(options =>
     options.UseSqlServer(connectionString));
+
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;

@@ -1,4 +1,5 @@
 ﻿using EcoMeal.Database.Entities;
+using EcoMeal.Database.Entities.Enums;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Net.NetworkInformation;
@@ -41,8 +42,16 @@ public class EcoMealDbContext : IdentityDbContext<ApplicationUser>
           new BusinessType { Id = (Entities.Enums.BusinessTypeEnum)2, Name = "Patiserie" },
           new BusinessType { Id = (Entities.Enums.BusinessTypeEnum)3, Name = "Cafe" },
           new BusinessType { Id = (Entities.Enums.BusinessTypeEnum)4, Name = "Supermarket" }
-     );
+        );
 
+        builder.Entity<PackageType>().HasData(
+            new PackageType { Id = PackageTypeEnum.Bakery, Name = "Bakery" },
+            new PackageType { Id = PackageTypeEnum.Beverage, Name = "Beverage" },
+            new PackageType { Id = PackageTypeEnum.Dairy, Name = "Dairy" },
+            new PackageType { Id = PackageTypeEnum.FrozenFood, Name = "Frozen Food" },
+            new PackageType { Id = PackageTypeEnum.Meat, Name = "Meat" },
+            new PackageType { Id = PackageTypeEnum.Produce, Name = "Produce" }
+        );
 
         builder.Entity<Order>().HasOne(o => o.User).WithMany(u => u.Orders).OnDelete(DeleteBehavior.Restrict);
         builder.Entity<OrderPackage>().HasOne(o => o.Order).WithMany(u => u.OrderPackages).OnDelete(DeleteBehavior.Restrict);
