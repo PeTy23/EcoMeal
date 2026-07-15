@@ -1,5 +1,6 @@
 ﻿using EcoMeal.Constants;
 using EcoMeal.Database.Entities;
+using EcoMeal.Models;
 using EcoMeal.Services.interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
@@ -14,7 +15,7 @@ public class AuthService(SignInManager<ApplicationUser> signInManager, UserManag
             request.Email, request.Password, true, false);
     }
 
-    public async Task<SignInResult> RegisterAsync(RegisterRequest request, string name)
+    public async Task<SignInResult> RegisterAsync(CustomRegisterRequest request)
     {
         if (await userManager.FindByEmailAsync(request.Email) is not null)
         {
@@ -25,7 +26,7 @@ public class AuthService(SignInManager<ApplicationUser> signInManager, UserManag
         {
             UserName = request.Email,
             Email = request.Email,
-            FullName = name,
+            FullName = request.Name,
             EmailConfirmed = true
         };
 

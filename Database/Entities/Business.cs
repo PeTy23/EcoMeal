@@ -18,4 +18,9 @@ public class Business
     public ICollection<Package> Packages { get; set; }
 
     public ICollection<Order> Orders { get; set; }
+
+    public string? ManagerId { get; set; }
+
+    [ForeignKey("ManagerId")]
+    public ApplicationUser Manager { get; set; }
 }

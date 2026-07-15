@@ -1,4 +1,5 @@
-﻿using EcoMeal.Services.interfaces;
+﻿using EcoMeal.Models;
+using EcoMeal.Services.interfaces;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,9 +20,9 @@ namespace EcoMeal.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromForm] RegisterRequest request, [FromQuery] string? returnUrl, [FromForm] string? name)
+        public async Task<IActionResult> Register([FromForm] CustomRegisterRequest request, [FromQuery] string? returnUrl)
         {
-            var result = await authService.RegisterAsync(request, name);
+            var result = await authService.RegisterAsync(request);
             if (result.Succeeded)
                 return LocalRedirect(returnUrl ?? "/");
 
