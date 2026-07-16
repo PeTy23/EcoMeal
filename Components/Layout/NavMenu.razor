@@ -24,12 +24,6 @@
                 </div>
 
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="weather">
-                        <span class="bi bi-list-nested" aria-hidden="true"></span> Weather
-                    </NavLink>
-                </div>
-
-                <div class="nav-item px-3">
                     <NavLink class="nav-link" href="restaurants">
                         <span class="bi bi-egg" aria-hidden="true"></span> Restaurants
                     </NavLink>
@@ -63,19 +57,6 @@
                     </form>
                 </div>
             </Authorized>
-            <NotAuthorized>
-                @* Vizibil DOAR pentru vizitatorii neautentificați *@
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="account/login">
-                        <span class="bi bi-person-check" aria-hidden="true"></span> Login
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="account/register">
-                        <span class="bi bi-person-plus" aria-hidden="true"></span> Register
-                    </NavLink>
-                </div>
-            </NotAuthorized>
         </AuthorizeView>
     </nav>
 </div>

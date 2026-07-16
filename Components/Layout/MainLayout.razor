@@ -1,20 +1,39 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<AuthorizeView>
+    <Authorized>
+        @* ---------------------------------------------------- *@
+        @* Lumea utilizatorului LOGAT (Vede meniul lateral)     *@
+        @* ---------------------------------------------------- *@
+        <div class="page">
+            <div class="sidebar">
+                <NavMenu />
+            </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <main>
+                <div class="top-row px-4">
+                    <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+                </div>
+
+                <article class="content px-4">
+                    @Body
+                </article>
+            </main>
         </div>
+    </Authorized>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+    <NotAuthorized>
+        @* ---------------------------------------------------- *@
+        @* Lumea utilizatorului NELOGAT (Vede doar pagina)      *@
+        @* ---------------------------------------------------- *@
+        <main class="d-flex justify-content-center align-items-center" style="min-height: 100vh; background-color: #f8f9fa;">
+            <div style="width: 100%; max-width: 450px; padding: 2rem; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                @Body
+            </div>
+        </main>
+    </NotAuthorized>
+</AuthorizeView>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
