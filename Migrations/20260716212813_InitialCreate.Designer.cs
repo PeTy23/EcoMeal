@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcoMeal.Migrations
 {
     [DbContext(typeof(EcoMealDbContext))]
-    [Migration("20260715094202_InitialCreate")]
+    [Migration("20260716212813_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -47,6 +47,9 @@ namespace EcoMeal.Migrations
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("HasPendingPartnerRequest")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -115,13 +118,21 @@ namespace EcoMeal.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ManagerId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("isApproved")
+                        .HasColumnType("bit");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BusinessTypeId");
+
+                    b.HasIndex("ManagerId");
 
                     b.ToTable("Businesses");
                 });
@@ -303,6 +314,38 @@ namespace EcoMeal.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("PackageTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 0,
+                            Name = "Bakery"
+                        },
+                        new
+                        {
+                            Id = 1,
+                            Name = "Beverage"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Dairy"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Frozen Food"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Name = "Meat"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Name = "Produce"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -446,6 +489,12 @@ namespace EcoMeal.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("EcoMeal.Database.Entities.ApplicationUser", "Manager")
+                        .WithMany("Businesses")
+                        .HasForeignKey("ManagerId");
+
+                    b.Navigation("Manager");
+
                     b.Navigation("type");
                 });
 
@@ -559,6 +608,8 @@ namespace EcoMeal.Migrations
 
             modelBuilder.Entity("EcoMeal.Database.Entities.ApplicationUser", b =>
                 {
+                    b.Navigation("Businesses");
+
                     b.Navigation("Orders");
                 });
 

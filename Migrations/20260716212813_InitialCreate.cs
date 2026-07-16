@@ -33,6 +33,7 @@ namespace EcoMeal.Migrations
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    HasPendingPartnerRequest = table.Column<bool>(type: "bit", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -204,11 +205,18 @@ namespace EcoMeal.Migrations
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    isApproved = table.Column<bool>(type: "bit", nullable: false),
+                    ManagerId = table.Column<string>(type: "nvarchar(450)", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Businesses", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Businesses_AspNetUsers_ManagerId",
+                        column: x => x.ManagerId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Businesses_BusinessTypes_BusinessTypeId",
                         column: x => x.BusinessTypeId,
@@ -323,6 +331,19 @@ namespace EcoMeal.Migrations
                     { 3, "Delivered" }
                 });
 
+            migrationBuilder.InsertData(
+                table: "PackageTypes",
+                columns: new[] { "Id", "Name" },
+                values: new object[,]
+                {
+                    { 0, "Bakery" },
+                    { 1, "Beverage" },
+                    { 2, "Dairy" },
+                    { 3, "Frozen Food" },
+                    { 4, "Meat" },
+                    { 5, "Produce" }
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -366,6 +387,11 @@ namespace EcoMeal.Migrations
                 name: "IX_Businesses_BusinessTypeId",
                 table: "Businesses",
                 column: "BusinessTypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Businesses_ManagerId",
+                table: "Businesses",
+                column: "ManagerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderPackages_OrderId",
@@ -432,13 +458,13 @@ namespace EcoMeal.Migrations
                 name: "Packages");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
-
-            migrationBuilder.DropTable(
                 name: "Businesses");
 
             migrationBuilder.DropTable(
                 name: "PackageTypes");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "BusinessTypes");
