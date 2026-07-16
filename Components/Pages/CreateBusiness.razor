@@ -1,11 +1,15 @@
 ﻿@page "/business/create"
 @page "/business/edit/{Id:guid}"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "BusinessManager, Admin")]
+
 @using EcoMeal.Database.Entities
 @using EcoMeal.Database.Entities.Enums
 @using EcoMeal.Services.interfaces
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
+
 @rendermode InteractiveServer
 @inject IBusinessService BusinessService
 @inject NavigationManager NavigationManager

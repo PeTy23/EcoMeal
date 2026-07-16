@@ -1,6 +1,7 @@
 ﻿using EcoMeal.Database.Entities;
 using EcoMeal.Services.interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EcoMeal.Controllers;
 
@@ -24,14 +25,16 @@ public class BusinessController(IBusinessService businessService): ControllerBas
         return business;
     }
 
-    [HttpPost] 
+    [HttpPost]
+    [Authorize(Roles = "BusinessManager, Admin")]
     public async Task<ActionResult> AddAsync(Business business)
     {
         await businessService.AddAsync(business);
         return Created();
     }
 
-    [HttpPut] 
+    [HttpPut]
+    [Authorize(Roles = "BusinessManager, Admin")]
     public async Task<ActionResult> UpdateAsync(Business business)
     {
         await businessService.UpdateAsync(business);
@@ -39,6 +42,7 @@ public class BusinessController(IBusinessService businessService): ControllerBas
     }
 
     [HttpDelete("{id:guid}")] 
+    [Authorize(Roles = "BusinessManager, Admin")]
     public async Task<ActionResult> DeleteAsync(Guid id)
     {
         await businessService.DeleteAsync(id);
