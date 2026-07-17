@@ -11,4 +11,5 @@ public interface IUserService
     Task<bool> ApprovePartnerRequestAsync(string userId);
     Task<bool> DenyPartnerRequestAsync(string userId);
     Task<bool> IsUserBusinessManagerAsync(string userId);
+    Task<List<ApplicationUser>> GetBusinessManagersAsync();
 }

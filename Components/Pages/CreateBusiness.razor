@@ -12,6 +12,7 @@
 
 @rendermode InteractiveServer
 @inject IBusinessService BusinessService
+@inject IUserService UserService
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthStateProvider
 
@@ -19,12 +20,13 @@
 
 @if (loading)
 {
-    <p>Loading...</p>
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
 }
 else
 {
     <EditForm Model="@model" OnValidSubmit="Submit" FormName="businessForm">
-        <!-- Aceste două linii activează validările roșii pe ecran -->
         <DataAnnotationsValidator />
         <ValidationSummary class="text-danger" />
 
@@ -46,7 +48,6 @@ else
         </div>
         <div class="mb-3">
             <label for="BusinessType" class="form-label">BusinessType</label>
-            <!-- Am modificat în BusinessTypeEnum -->
             <InputSelect id="businessType" class="form-select" @bind-Value="model.BusinessType">
                 @foreach (var type in Enum.GetValues<BusinessTypeEnum>())
                 {
@@ -55,11 +56,30 @@ else
             </InputSelect>
         </div>
 
+        @* Secțiunea vizibilă DOAR pentru Admin *@
+        @if (isAdmin)
+        {
+            <div class="mb-4 p-3 bg-light border rounded">
+                <label for="ManagerId" class="form-label fw-bold text-danger">Assign to Business Manager (Admin Only)</label>
+                <InputSelect id="ManagerId" class="form-select" @bind-Value="model.ManagerId">
+                    <option value="">-- Select a Manager --</option>
+                    @foreach (var manager in availableManagers)
+                    {
+                        <option value="@manager.Id">@manager.FullName (@manager.Email)</option>
+                    }
+                </InputSelect>
+                @if (showAdminManagerError)
+                {
+                    <span class="text-danger small">Please select a manager for this business.</span>
+                }
+            </div>
+        }
+
         <button type="submit" class="btn btn-primary">@(IsEditMode ? "Save" : "Create")</button>
 
         @if (IsEditMode)
         {
-            <button type="button" class="btn btn-danger" @onclick="DeleteBusiness">Delete</button>
+            <button type="button" class="btn btn-danger ms-2" @onclick="DeleteBusiness">Delete</button>
         }
     </EditForm>
 }
@@ -72,11 +92,25 @@ else
     private bool loading = true;
     private BusinessFormModel model = new();
 
+    // Variabile noi pentru logica de Admin
+    private bool isAdmin = false;
+    private List<ApplicationUser> availableManagers = new();
+    private bool showAdminManagerError = false;
+
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        isAdmin = user.IsInRole("Admin");
+
+        // Dacă e admin, încărcăm toți managerii din baza de date pentru dropdown
+        if (isAdmin)
+        {
+            availableManagers = await UserService.GetBusinessManagersAsync();
+        }
+
         if (IsEditMode)
         {
-            // Apelăm direct serviciul, care ne dă obiectul curat, fără coduri HTTP
             var business = await BusinessService.GetByIdAsync(Id!.Value);
 
             if (business is not null)
@@ -87,8 +121,8 @@ else
                     Description = business.Description,
                     Address = business.Address,
                     ImageUrl = business.ImageUrl,
-                    // Dacă clasa Business are BusinessTypeEnum, facem cast sau atribuire directă
                     BusinessType = (BusinessTypeEnum)business.BusinessTypeId,
+                    ManagerId = business.ManagerId // Prepopulăm managerul existent la editare
                 };
             }
         }
@@ -98,30 +132,43 @@ else
 
     private async Task Submit()
     {
-        var AuthState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = AuthState.User;
+        showAdminManagerError = false;
 
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
         var currentUserId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        if (currentUserId == null)
-        {
-            // Ne oprim dacă utilizatorul nu este logat
-            return;
-        }
+        if (currentUserId == null) return;
 
+        // Logica de validare a managerului
+        string finalManagerId = string.Empty;
+
+        if (isAdmin)
+        {
+            if (string.IsNullOrEmpty(model.ManagerId))
+            {
+                showAdminManagerError = true;
+                return; // Oprim salvarea dacă Adminul nu a ales pe nimeni
+            }
+            finalManagerId = model.ManagerId;
+        }
+        else
+        {
+            // Dacă e BusinessManager, îi asignăm lui direct restaurantul
+            finalManagerId = currentUserId;
+        }
 
         var business = new Business
         {
             Id = Id ?? Guid.NewGuid(),
-            Name = model.Name,
-            Description = model.Description,
-            Address = model.Address,
-            ImageUrl = model.ImageUrl,
-            // Aici mapați valoarea înapoi către proprietatea din clasa voastră
+            Name = model.Name!,
+            Description = model.Description!,
+            Address = model.Address!,
+            ImageUrl = model.ImageUrl!,
             BusinessTypeId = model.BusinessType,
-            ManagerId = currentUserId,
+            ManagerId = finalManagerId,
             type = null!,
-            
+            isApproved = isAdmin // Dacă Adminul îl creează, e aprobat instant! Dacă e manager, rămâne pe false.
         };
 
         if (IsEditMode)
@@ -133,8 +180,11 @@ else
             await BusinessService.AddAsync(business);
         }
 
-        // Probabil vei dori să schimbi asta din /counter într-o pagină care listează business-urile
-        NavigationManager.NavigateTo("/counter");
+        // Redirecționare în funcție de rol
+        if (isAdmin)
+            NavigationManager.NavigateTo("/admin/businesses");
+        else
+            NavigationManager.NavigateTo("/"); // Vom schimba asta mai târziu spre dashboard-ul partenerului
     }
 
     private async Task DeleteBusiness()
@@ -142,11 +192,10 @@ else
         if (Id.HasValue)
         {
             await BusinessService.DeleteAsync(Id.Value);
-            NavigationManager.NavigateTo("/counter");
+            NavigationManager.NavigateTo("/admin/businesses");
         }
     }
 
-    // Am adăugat atributele [Required] pentru a face formularul sigur
     private class BusinessFormModel
     {
         [Required(ErrorMessage = "Name is required.")]
@@ -158,9 +207,12 @@ else
         [Required(ErrorMessage = "Address is required.")]
         public string? Address { get; set; }
 
-        public string? ImageUrl { get; set; } // Opțional, dacă permiteți business-uri fără poză
+        public string? ImageUrl { get; set; }
 
         [Required]
-        public BusinessTypeEnum BusinessType { get; set; } // Tipul trebuie să fie Enum-ul
+        public BusinessTypeEnum BusinessType { get; set; }
+
+        // Adăugăm ManagerId în model pentru a face bind cu Dropdown-ul
+        public string? ManagerId { get; set; }
     }
 }

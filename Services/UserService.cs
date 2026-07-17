@@ -71,4 +71,10 @@ public class UserService(UserManager<ApplicationUser> userManager) : IUserServic
             .Where(u => u.HasPendingPartnerRequest)
             .ToListAsync();
     }
+
+    public async Task<List<ApplicationUser>> GetBusinessManagersAsync()
+    {
+        var users = await userManager.GetUsersInRoleAsync("BusinessManager");
+        return users.ToList();
+    }
 }

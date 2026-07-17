@@ -67,7 +67,7 @@
                                 <button class="btn btn-sm @(biz.isApproved ? "btn-warning" : "btn-success") me-2"
                                         @onclick="() => ToggleStatus(biz.Id)">
                                     <span class="bi @(biz.isApproved ? "bi-pause-circle" : "bi-play-circle")"></span>
-                                    @(biz.isApproved ? "Suspend" : "Approve")
+                                    @(biz.isApproved ? "Suspend" : "Publish")
                                 </button>
 
                                 @* Butonul de Edit *@
