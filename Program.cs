@@ -37,6 +37,7 @@ builder.Services.AddScoped<IBusinessService, BusinessServices>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPackageRepository, PackageRepository>();
 builder.Services.AddScoped<IPackageService, PackageServices>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddControllers();
 builder.Services.AddScoped<BusinessController>();
 builder.Services.AddScoped<PackageController>();

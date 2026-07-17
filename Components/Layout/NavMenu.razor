@@ -45,6 +45,22 @@
             </Authorized>
         </AuthorizeView>
 
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="admin/dashboard">
+                        <span class="bi bi-egg" aria-hidden="true"></span> Pending Managers
+                    </NavLink>
+                </div>
+           
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="admin/businesses">
+                        <span class="bi bi-egg" aria-hidden="true"></span> View Businesses
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
         <AuthorizeView>
             <Authorized>
                 @* Vizibil DOAR pentru utilizatorii logați *@
@@ -55,6 +71,12 @@
                             <span class="bi bi-arrow-bar-left" aria-hidden="true"></span> Logout
                         </button>
                     </form>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/profile">
+                        <span class="bi bi-egg" aria-hidden="true"></span> Profile
+                    </NavLink>
                 </div>
             </Authorized>
         </AuthorizeView>

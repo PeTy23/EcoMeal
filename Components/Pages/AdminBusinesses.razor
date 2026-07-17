@@ -1,0 +1,126 @@
+﻿@page "/admin/businesses"
+@rendermode InteractiveServer
+
+@using EcoMeal.Database.Entities
+@using EcoMeal.Services.interfaces
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = "Admin")]
+@inject IBusinessService BusinessService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Manage Businesses</PageTitle>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><span class="bi bi-shop text-primary me-2"></span>Manage Businesses</h2>
+        <a href="/business/create" class="btn btn-primary">
+            <span class="bi bi-plus-lg"></span> Add New Business
+        </a>
+    </div>
+    <hr />
+
+    @if (loading)
+    {
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    else if (!businesses.Any())
+    {
+        <div class="alert alert-info" role="alert">
+            No businesses found in the system.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle shadow-sm bg-white rounded">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Address</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var biz in businesses)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@biz.Name</strong>
+                            </td>
+                            <td>@biz.Address</td>
+                            <td>
+                                @if (biz.isApproved)
+                                {
+                                    <span class="badge bg-success">Approved</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Suspended / Pending</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @* Butonul de Toggle Status *@
+                                <button class="btn btn-sm @(biz.isApproved ? "btn-warning" : "btn-success") me-2"
+                                        @onclick="() => ToggleStatus(biz.Id)">
+                                    <span class="bi @(biz.isApproved ? "bi-pause-circle" : "bi-play-circle")"></span>
+                                    @(biz.isApproved ? "Suspend" : "Approve")
+                                </button>
+
+                                @* Butonul de Edit *@
+                                <button class="btn btn-sm btn-outline-primary me-2"
+                                        @onclick="() => EditBusiness(biz.Id)">
+                                    <span class="bi bi-pencil"></span>
+                                </button>
+
+                                @* Butonul de Delete *@
+                                <button class="btn btn-sm btn-outline-danger"
+                                        @onclick="() => DeleteBusiness(biz.Id)">
+                                    <span class="bi bi-trash"></span>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Business> businesses = new();
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBusinesses();
+    }
+
+    private async Task LoadBusinesses()
+    {
+        loading = true;
+        businesses = await BusinessService.GetAll();
+        loading = false;
+    }
+
+    private async Task ToggleStatus(Guid id)
+    {
+        await BusinessService.ToggleApprovalAsync(id);
+        await LoadBusinesses(); // Refresh la tabel
+    }
+
+    private void EditBusiness(Guid id)
+    {
+        NavigationManager.NavigateTo($"/business/edit/{id}");
+    }
+
+    private async Task DeleteBusiness(Guid id)
+    {
+        // Într-o aplicație reală, aici poți adăuga un modal de confirmare JS înainte de ștergere
+        await BusinessService.DeleteAsync(id);
+        await LoadBusinesses();
+    }
+}

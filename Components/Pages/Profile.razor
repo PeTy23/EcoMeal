@@ -1,0 +1,153 @@
+﻿@page "/profile"
+@rendermode InteractiveServer
+
+@using EcoMeal.Database.Entities
+@using EcoMeal.Services.interfaces
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+
+@attribute [Authorize]
+@inject IUserService UserService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>My Profile</PageTitle>
+
+<div class="profile-container">
+    @if (loading)
+    {
+        <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    else if (user is not null)
+    {
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="avatar-circle">
+                    <span class="bi bi-person-fill"></span>
+                </div>
+                <h2>@user.FullName</h2>
+                <p class="text-muted">@user.Email</p>
+            </div>
+
+            <div class="profile-body">
+                <div class="status-section">
+                    <h4>Account Status</h4>
+
+                    @if (isAdmin)
+                    {
+                        <p class="text-danger fw-bold">Administrator</p>
+                    }
+                    else if (isBusinessManager || isBusinessManagerInDb)
+                    {
+                        <p class="text-success fw-bold">Business Partner</p>
+                    }
+                    else
+                    {
+                        <p>You are currently registered as a standard customer.</p>
+                    }
+                </div>
+
+                @if (!isAdmin && !isBusinessManager)
+                {
+                    <div class="action-section">
+                        @if (isBusinessManagerInDb && !isBusinessManager)
+                        {
+                            <div class="alert alert-success d-flex align-items-center" role="alert">
+                                <span class="bi bi-party-popper me-2"></span>
+                                <div>
+                                    <strong>Congratulations!</strong> Your request was approved. Please <strong>Log out</strong> and log back in to access your new partner tools.
+                                </div>
+                            </div>
+                        }
+
+
+                        else if (user.HasPendingPartnerRequest)
+                        {
+                            <div class="alert alert-info d-flex align-items-center" role="alert">
+                                <span class="bi bi-info-circle-fill me-2"></span>
+                                <div>
+                                    Your request to become a partner is currently pending approval by an admin.
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary w-100" disabled>Request Pending</button>
+                        }
+                        else
+                        {
+                            <p>Want to sell your products on EcoMeal? Apply to become a business partner!</p>
+                            <button class="btn btn-primary w-100" @onclick="SubmitPartnerRequest" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>Submitting...</span>
+                                }
+                                else
+                                {
+                                    <span>Become a Partner</span>
+                                }
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Oops!</h4>
+            <p>Could not load user profile details. Please try refreshing the page.</p>
+        </div>
+    }
+</div>
+
+@code {
+    private ApplicationUser? user;
+    private bool loading = true;
+    private bool isSubmitting = false;
+
+    private bool isAdmin = false;
+    private bool isBusinessManager = false;
+    private bool isBusinessManagerInDb = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Preluăm starea folosind serviciul injectat, sigur și stabil în InteractiveServer
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var claimsPrincipal = authState.User;
+            var userId = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            isBusinessManagerInDb = await UserService.IsUserBusinessManagerAsync(userId);
+            isAdmin = claimsPrincipal.IsInRole("Admin");
+            isBusinessManager = claimsPrincipal.IsInRole("BusinessManager");
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                user = await UserService.GetUserByIdAsync(userId);
+            }
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task SubmitPartnerRequest()
+    {
+        if (user is not null && !isSubmitting)
+        {
+            isSubmitting = true;
+
+            var success = await UserService.RequestPartnerStatusAsync(user.Id);
+
+            if (success)
+            {
+                user.HasPendingPartnerRequest = true;
+            }
+
+            isSubmitting = false;
+        }
+    }
+}

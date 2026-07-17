@@ -1,0 +1,100 @@
+﻿@page "/admin/dashboard"
+@rendermode InteractiveServer
+
+@using EcoMeal.Database.Entities
+@using EcoMeal.Services.interfaces
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = "Admin")]
+@inject IUserService UserService
+
+<PageTitle>Admin Dashboard</PageTitle>
+
+<div class="container mt-4">
+    <h2><span class="bi bi-shield-lock-fill text-danger me-2"></span>Admin Dashboard</h2>
+    <hr />
+
+    <h4>Pending Partner Requests</h4>
+
+    @if (loading)
+    {
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    else if (pendingRequests.Count == 0)
+    {
+        <div class="alert alert-success mt-3" role="alert">
+            <span class="bi bi-check-circle-fill me-2"></span>
+            All caught up! There are no pending partner requests.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive mt-3">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in pendingRequests)
+                    {
+                        <tr>
+                            <td><strong>@user.FullName</strong></td>
+                            <td>@user.Email</td>
+                            <td><span class="badge bg-warning text-dark">Pending</span></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-success me-2" @onclick="() => ApproveRequest(user.Id)">
+                                    <span class="bi bi-check-lg"></span> Approve
+                                </button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => DenyRequest(user.Id)">
+                                    <span class="bi bi-x-lg"></span> Deny
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ApplicationUser> pendingRequests = new();
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRequests();
+    }
+
+    private async Task LoadRequests()
+    {
+        loading = true;
+        pendingRequests = await UserService.GetPendingPartnerRequestsAsync();
+        loading = false;
+    }
+
+    private async Task ApproveRequest(string userId)
+    {
+        var success = await UserService.ApprovePartnerRequestAsync(userId);
+        if (success)
+        {
+            await LoadRequests(); // Reîmprospătăm tabelul
+        }
+    }
+
+    private async Task DenyRequest(string userId)
+    {
+        var success = await UserService.DenyPartnerRequestAsync(userId);
+        if (success)
+        {
+            await LoadRequests(); // Reîmprospătăm tabelul
+        }
+    }
+}

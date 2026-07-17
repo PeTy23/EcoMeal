@@ -11,4 +11,5 @@ public interface IBusinessService
     Task UpdateAsync(Business business);
     Task DeleteAsync(Guid id);
 
+    Task ToggleApprovalAsync(Guid id);
 }
